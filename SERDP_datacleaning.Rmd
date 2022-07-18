@@ -13,11 +13,32 @@ if (!require(librarian)){
   library(librarian)
 }
 
-librarian::shelf(tidyverse, here)
+librarian::shelf(tidyverse, here, purrr)
 ```
 
-
+# site_level data
 ```{r}
+
+site_level_data_2017 <- read_csv(here("data", "site_level_data", "2017_site_data", 
+                                      "site_level_data_2017_all.csv"))
+
+colnames_2017  <- colnames(site_level_data_2017)
+
+site_level_data_2018_LA <- read_csv(here("data", "site_level_data", "2018_site_data", "LA_site_2018.csv")) %>% 
+  select(colnames_2017)
+
+site_level_data_2018_NM <- read_csv(here("data", "site_level_data", "2018_site_data", "NM_site_2018.csv"))
+
+site_level_data_2018_PA <- read_csv(here("data", "site_level_data", "2018_site_data", "PA_site_2018.csv"))
+
+site_level_data_2018_TN <- read_csv(here("data", "site_level_data", "2018_site_data", "TN_site_2018.csv"))
+
+site_level_data_2018_VT <- read_csv(here("data", "site_level_data", "2018_site_data", "VT_site_2018.csv"))
+
+site_level_data_2018 <- cbind(site_level_data_2018_LA, site_level_data_2018_NM, site_level_data_2018_PA, 
+                              site_level_data_2018_TN, site_level_data_2018_VT)
+
+
 
 ```
 
