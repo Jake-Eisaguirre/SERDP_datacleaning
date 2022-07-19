@@ -13,7 +13,7 @@ if (!require(librarian)){
   library(librarian)
 }
 
-librarian::shelf(tidyverse, here, purrr, parsedate, lubridate, janitor)
+librarian::shelf(tidyverse, here, parsedate, lubridate, janitor, plyr, stringr)
 ```
 
 ```{r}
@@ -33,82 +33,118 @@ librarian::shelf(tidyverse, here, purrr, parsedate, lubridate, janitor)
 
 # site_level data - this code chunk is ugly AF need to create loop for this
 ```{r}
-# 37 common col names across sites
-site_level_common_colnames <- read_rds(here("site_level_common_colnames.rds"))
+
 
 # all 2017 site level data
-site_level_data_2017 <- read_csv(here("data", "site_level_data", "2017_site_data", 
+site_level_data_2017 <- read_csv(here::here("data", "site_level_data", "2017_site_data", 
                                       "site_level_data_2017_all.csv")) %>% 
   clean_names() %>% 
   mutate(date = parse_date(date),
          end_time = parse_time(end_time),
-         start_time = parse_time(start_time)) %>% 
-  select(site_level_common_colnames)
+         start_time = parse_time(start_time),
+         site_code = sub("^0+", "", site_code))
   
 # 2018 site level data
-site_level_data_2018_LA <- read_csv(here("data", "site_level_data", "2018_site_data", "LA_site_2018.csv")) %>%
+site_level_data_2018_LA <- read_csv(here::here("data", "site_level_data", "2018_site_data", "LA_site_2018.csv")) %>%
   clean_names() %>% 
-  mutate(date = parse_date(date))%>% 
-  select(site_level_common_colnames)
+  mutate(date = parse_date(date),
+         site_code = sub("^0+", "", site_code))
 
-site_level_data_2018_NM <- read_csv(here("data", "site_level_data", "2018_site_data", "NM_site_2018.csv"))  %>%
+site_level_data_2018_NM <- read_csv(here::here("data", "site_level_data", "2018_site_data", "NM_site_2018.csv"))  %>%
   clean_names() %>%
-  mutate(date = parse_date(date))%>% 
-  select(site_level_common_colnames)
+  mutate(date = parse_date(date),
+         site_code = sub("^0+", "", site_code))
 
-site_level_data_2018_PA <- read_csv(here("data", "site_level_data", "2018_site_data", "PA_site_2018.csv")) %>%
+site_level_data_2018_PA <- read_csv(here::here("data", "site_level_data", "2018_site_data", "PA_site_2018.csv")) %>%
   clean_names() %>%
-  mutate(date = parse_date(date))%>% 
-  select(site_level_common_colnames)
+  mutate(date = parse_date(date),
+         site_code = sub("^0+", "", site_code))
 
-site_level_data_2018_TN <- read_csv(here("data", "site_level_data", "2018_site_data", "TN_site_2018.csv")) %>%
+site_level_data_2018_TN <- read_csv(here::here("data", "site_level_data", "2018_site_data", "TN_site_2018.csv")) %>%
   clean_names() %>%
-  mutate(date = parse_date(date))%>% 
-  select(site_level_common_colnames)
+  mutate(date = parse_date(date),
+         site_code = sub("^0+", "", site_code))
 
-site_level_data_2018_VT <- read_csv(here("data", "site_level_data", "2018_site_data", "VT_site_2018.csv")) %>% 
+site_level_data_2018_VT <- read_csv(here::here("data", "site_level_data", "2018_site_data", "VT_site_2018.csv")) %>% 
   clean_names() %>%
-  mutate(date = parse_date(date))%>% 
-  select(site_level_common_colnames)
+  mutate(date = parse_date(date),
+         site_code = sub("^0+", "", site_code))
 
 # 2019 site level data
-site_level_data_2019_LA <- read_csv(here("data", "site_level_data", "2019_site_data", "LA_site_2019.csv")) %>%
+site_level_data_2019_LA <- read_csv(here::here("data", "site_level_data", "2019_site_data", "LA_site_2019.csv")) %>%
   clean_names() %>% 
-  mutate(date = parse_date(date))%>% 
-  select(site_level_common_colnames)
+  mutate(date = parse_date(date),
+         site_code = sub("^0+", "", site_code))
 
-site_level_data_2019_NM <- read_csv(here("data", "site_level_data", "2019_site_data", "NM_site_2019.csv"))  %>%
+site_level_data_2019_NM <- read_csv(here::here("data", "site_level_data", "2019_site_data", "NM_site_2019.csv"))  %>%
   clean_names() %>%
-  mutate(date = parse_date(date))%>% 
-  select(site_level_common_colnames)
+  mutate(date = parse_date(date),
+         site_code = sub("^0+", "", site_code))
 
-site_level_data_2019_PA <- read_csv(here("data", "site_level_data", "2019_site_data", "PA_site_2019.csv")) %>%
+site_level_data_2019_PA <- read_csv(here::here("data", "site_level_data", "2019_site_data", "PA_site_2019.csv")) %>%
   clean_names() %>%
-  mutate(date = parse_date(date))%>% 
-  select(site_level_common_colnames)
+  mutate(date = parse_date(date),
+         site_code = sub("^0+", "", site_code))
 
-site_level_data_2019_TN <- read_csv(here("data", "site_level_data", "2019_site_data", "TN_site_2019.csv")) %>%
+site_level_data_2019_TN <- read_csv(here::here("data", "site_level_data", "2019_site_data", "TN_site_2019.csv")) %>%
   clean_names() %>%
-  mutate(date = parse_date(date))%>% 
-  select(site_level_common_colnames)
+  mutate(date = parse_date(date),
+         site_code = sub("^0+", "", site_code))
 
-site_level_data_2019_VT <- read_csv(here("data", "site_level_data", "2019_site_data", "VT_site_2019.csv")) %>% 
+site_level_data_2019_VT <- read_csv(here::here("data", "site_level_data", "2019_site_data", "VT_site_2019.csv")) %>% 
   clean_names() %>%
-  mutate(date = parse_date(date))%>% 
-  select(site_level_common_colnames)
+  mutate(date = parse_date(date),
+         site_code = sub("^0+", "", site_code))
 
 
-
-
-site_level_data <- as.data.frame(rbind(site_level_data_2017, site_level_data_2018_LA, 
+# rbin all site level including non-matched columns
+site_level_data <- as.data.frame(rbind.fill(site_level_data_2017, site_level_data_2018_LA, 
                                       site_level_data_2018_NM, site_level_data_2018_PA,
                                       site_level_data_2018_TN, site_level_data_2018_VT,
                                       site_level_data_2019_LA, 
                                       site_level_data_2019_NM, site_level_data_2019_PA,
                                       site_level_data_2019_TN, site_level_data_2019_VT))
 
-write_csv(site_level_data, here("data", "site_level_data", "all_site_level_data.csv"))
+# read in site_coordinates
+site_coords <- read_csv(here::here('data', "site_level_data", "site_coordinates.csv")) %>% 
+  clean_names() %>% 
+  mutate(site_code = str_sub(site, 3))
 
+site_coords$site_code <- sub("^0+", "", site_coords$site_code)
+  
+
+site_level_data <- left_join(site_level_data, site_coords, by = c("dod_location", "site_code"))
+  
+
+write_csv(site_level_data, here::here("data", "site_level_data", "all_site_level_data.csv"))
+
+
+```
+
+# now pull out site table on unique sites
+```{r}
+
+site_table <- site_level_data %>% 
+  dplyr::select(dod_location, date, site_name, site, lat, long) %>% 
+  dplyr::group_by(dod_location, site_name) %>% 
+  dplyr::mutate(site_temp_id = cur_group_id()) %>% 
+  dplyr::filter(!duplicated(site_temp_id))
+
+
+
+
+```
+
+# now pull out location on unique locatins
+```{r}
+
+location_table <- site_table %>% 
+  ungroup() %>% 
+  dplyr::select(dod_location) %>%
+  group_by(dod_location) %>% 
+  dplyr::mutate(location = dod_location,
+         temp_loc_id = cur_group_id()) %>% 
+  dplyr::filter(!duplicated(temp_loc_id))
 
 ```
 
