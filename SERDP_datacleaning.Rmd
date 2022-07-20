@@ -33,40 +33,40 @@ site_level_data_2018_LA <- read_csv(here::here("data", "site_level_data", "2018_
   mutate(date = parse_date(date))
 site_level_data_2018_NM <- read_csv(here::here("data", "site_level_data", "2018_site_data", "NM_site_2018.csv"))  %>%
   clean_names() %>%
-  mutate(date = parse_date(date))#remove leading zeros in site_code for easy join
+  mutate(date = parse_date(date))
 
 site_level_data_2018_PA <- read_csv(here::here("data", "site_level_data", "2018_site_data", "PA_site_2018.csv")) %>%
   clean_names() %>%
-  mutate(date = parse_date(date))#remove leading zeros in site_code for easy join
+  mutate(date = parse_date(date))
 
 site_level_data_2018_TN <- read_csv(here::here("data", "site_level_data", "2018_site_data", "TN_site_2018.csv")) %>%
   clean_names() %>%
-  mutate(date = parse_date(date))#remove leading zeros in site_code for easy join
+  mutate(date = parse_date(date))
 
 site_level_data_2018_VT <- read_csv(here::here("data", "site_level_data", "2018_site_data", "VT_site_2018.csv")) %>% 
   clean_names() %>%
-  mutate(date = parse_date(date))#remove leading zeros in site_code for easy join
+  mutate(date = parse_date(date))
 
 # 2019 site level data
 site_level_data_2019_LA <- read_csv(here::here("data", "site_level_data", "2019_site_data", "LA_site_2019.csv")) %>%
   clean_names() %>% 
-  mutate(date = parse_date(date))#remove leading zeros in site_code for easy join
+  mutate(date = parse_date(date))
 
 site_level_data_2019_NM <- read_csv(here::here("data", "site_level_data", "2019_site_data", "NM_site_2019.csv"))  %>%
   clean_names() %>%
-  mutate(date = parse_date(date))#remove leading zeros in site_code for easy join
+  mutate(date = parse_date(date))
 
 site_level_data_2019_PA <- read_csv(here::here("data", "site_level_data", "2019_site_data", "PA_site_2019.csv")) %>%
   clean_names() %>%
-  mutate(date = parse_date(date))#remove leading zeros in site_code for easy join
+  mutate(date = parse_date(date))
 
 site_level_data_2019_TN <- read_csv(here::here("data", "site_level_data", "2019_site_data", "TN_site_2019.csv")) %>%
   clean_names() %>%
-  mutate(date = parse_date(date))#remove leading zeros in site_code for easy join
+  mutate(date = parse_date(date))
 
 site_level_data_2019_VT <- read_csv(here::here("data", "site_level_data", "2019_site_data", "VT_site_2019.csv")) %>% 
   clean_names() %>%
-  mutate(date = parse_date(date))#remove leading zeros in site_code for easy join
+  mutate(date = parse_date(date))
 ```
 
 # combine data sets 
@@ -148,6 +148,10 @@ visit_table <- site_level_data %>%
                 ) %>% 
   dplyr::filter(!duplicated(temp_visit_id))
 
+t <- visit_table %>% 
+  ungroup() %>% 
+  count(date, dod_location, site_code, survey_time) %>% 
+  filter(n>1)
 
 
 write_csv(visit_table, here::here("clean_tables", "visit_table.csv"))
@@ -173,7 +177,10 @@ survey_table <- site_level_data %>%
                 temperature_last_48_h = str_to_lower(temperature_last_48_h)) %>% 
   filter(!duplicated(temp_survey_id))
 
-a <- left_join(survey_table, capture_table)
+t <- survey_table %>% 
+  ungroup() %>% 
+  count(date, dod_location, site_code, survey_time) %>% 
+  filter(n>1)
 
 write_csv(survey_table, here::here("clean_tables", "survey_table.csv"))
 
@@ -194,29 +201,28 @@ site_co
 file_path <- here::here(here::here("data", "animal_level_data", "2017_animal_data"), 
                         list.files(here::here("data", "animal_level_data", "2017_animal_data"), pattern = "*.csv"))
 
-for(i in 1:length(file_path)) {
-  
-  bio_data_2017 <- plyr::rbind.fill(read_csv(file_path[i]))
-}
+
+csv_2017 <- lapply(file_path, read.csv)
+bio_data_2017 <- plyr::rbind.fill(csv_2017) %>% 
+  clean_names()
+
 
 
 # 2018
 file_path <- here::here(here::here("data", "animal_level_data", "2018_animal_data"), 
                         list.files(here::here("data", "animal_level_data", "2018_animal_data"), pattern = "*.csv"))
 
-for(i in 1:length(file_path)) {
-  
-  bio_data_2018 <- plyr::rbind.fill(read_csv(file_path[i]))
-}
+csv_2018 <- lapply(file_path, read.csv)
+bio_data_2018 <- plyr::rbind.fill(csv_2018) %>% 
+  clean_names()
 
 # 2019
 file_path <- here::here(here::here("data", "animal_level_data", "2019_animal_data"), 
                         list.files(here::here("data", "animal_level_data", "2019_animal_data"), pattern = "*.csv"))
 
-for(i in 1:length(file_path)) {
-  
-  bio_data_2019 <- plyr::rbind.fill(read_csv(file_path[i]))
-}
+csv_2019 <- lapply(file_path, read.csv)
+bio_data_2019 <- plyr::rbind.fill(csv_2019) %>% 
+  clean_names()
 
 
 all_bio_data <- plyr::rbind.fill(bio_data_2017, bio_data_2018, bio_data_2019) %>% 
@@ -235,7 +241,7 @@ capture_table <- all_bio_data %>%
                 day_night = str_to_lower(day_night),
                 notes = str_to_lower(notes),
                 survey_time = day_night) %>% 
-  select(!day_night)
+  select(!c(day_night, serdp_location_name, site, site_name))
 
 write_csv(capture_table, here::here("clean_tables", "capture_table.csv"))
 
@@ -248,16 +254,18 @@ write_csv(capture_table, here::here("clean_tables", "capture_table.csv"))
 file_path <- here::here(here::here("data", "qPCR_results"), 
                         list.files(here::here("data", "qPCR_results"), pattern = "*.csv"))
 
-for(i in 1:length(file_path)) {
-  
-  all_qpcr <- plyr::rbind.fill(read_csv(file_path[i]))
-}
-
+csv_pcr <- lapply(file_path, read.csv)
+all_qpcr <- plyr::rbind.fill(csv_pcr) %>% 
+  clean_names()
 
 q_pcr_table <- all_qpcr %>% 
   clean_names() %>% 
   dplyr::mutate(extract_date = parse_date(extract_date),
          temp_pcr_id = row_number())
+
+a <- q_pcr_table %>% 
+  count(sample_id) %>% 
+  filter(n>1)
 
 write_csv(q_pcr_table, here::here("clean_tables", "qpcr_table.csv"))
 
