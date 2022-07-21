@@ -140,12 +140,12 @@ write_csv(location_table, here::here("clean_tables", "location_table.csv"))
 
 visit_table <- site_level_data %>% 
   ungroup() %>% 
-  select(date, survey_time, site_code, dod_location) %>% 
-  group_by(date, survey_time) %>% 
+  select(date, survey_time, site_code, dod_location, x41) %>% 
+  group_by(date, survey_time, site_code, dod_location) %>%
   dplyr::mutate(temp_visit_id = cur_group_id(),
                 survey_time = str_to_lower(survey_time),
                 dod_location = str_to_lower(dod_location),
-                ) %>% 
+                ) %>%
   dplyr::filter(!duplicated(temp_visit_id))
 
 t <- visit_table %>% 
@@ -175,7 +175,8 @@ survey_table <- site_level_data %>%
                 survey_time = str_to_lower(survey_time),
                 precipitation_during_visit = str_to_lower(precipitation_during_visit),
                 temperature_last_48_h = str_to_lower(temperature_last_48_h)) %>% 
-  filter(!duplicated(temp_survey_id))
+  filter(!duplicated(temp_survey_id)) %>% 
+  select(!x41)
 
 t <- survey_table %>% 
   ungroup() %>% 
