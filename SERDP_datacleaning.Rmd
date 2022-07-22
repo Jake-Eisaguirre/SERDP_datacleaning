@@ -82,11 +82,11 @@ site_level_data <- as.data.frame(plyr::rbind.fill(site_level_data_2017, site_lev
 # read in site_coordinates
 site_coords <- read_csv(here::here('data', "site_level_data", "site_coordinates.csv")) %>% 
   clean_names() %>% 
-  mutate(site_code = site) %>% 
-  select(!site) %>% 
-  mutate(site_code = str_to_lower(site_code),
-         dod_location = str_to_lower(dod_location),
-         site_name = str_to_lower(site_name))
+  mutate(site_code = as.numeric(substring(site, 3)),
+         site = str_to_lower(substring(site, 1,2)),
+         site = paste(site, site_code, sep = "")) %>% 
+  select(!site_code) %>% 
+  mutate(dod_location = str_to_lower(dod_location))
 
 
 write_csv(site_coords, here::here("clean_tables", "site_codes.csv"))
@@ -104,15 +104,32 @@ write_csv(site_level_data, here::here("clean_tables", "all_site_level_data.csv")
 ```{r}
 
 site_table <- site_level_data %>% 
-  dplyr::select(dod_location, date, site_code) %>% 
+  mutate(site_code = as.numeric(site_code)) %>% 
+  dplyr::select(dod_location, site_code) %>% 
+  mutate(site = paste(dod_location, site_code, sep = "")) %>% 
   dplyr::group_by(dod_location, site_code) %>% 
   dplyr::mutate(site_temp_id = cur_group_id(),
                 dod_location = str_to_lower(dod_location),
+                site = str_to_lower(site),
                 site_code = str_to_lower(site_code))%>% 
   dplyr::filter(!duplicated(site_temp_id))
 
 write_csv(site_table, here::here("clean_tables", "site_table.csv"))
 
+
+```
+
+# pull out regions
+```{r}
+region_tabl <- site_table %>% 
+  select(dod_location, site_code) %>% 
+  group_by(dod_location) %>% 
+  mutate(temp_reg_id = cur_group_id()) %>% 
+  filter(!duplicated(temp_reg_id)) %>% 
+  select(!site_code) %>% 
+  drop_na()
+
+write_csv(region_tabl, here("clean_tables", "region_table.csv"))
 
 ```
 
@@ -187,13 +204,6 @@ write_csv(survey_table, here::here("clean_tables", "survey_table.csv"))
 
 ```
 
-# clean up site_codes
-```{r}
-
-site_co
-
-```
-
 
 # read in animal data - now that is how the above code chunk should look, `me gusta`
 ```{r}
@@ -261,12 +271,15 @@ all_qpcr <- plyr::rbind.fill(csv_pcr) %>%
 
 q_pcr_table <- all_qpcr %>% 
   clean_names() %>% 
+  #group_by(sample_id) %>% 
   dplyr::mutate(extract_date = parse_date(extract_date),
-         temp_pcr_id = row_number())
+         temp_pcr_id = cur_group_id()) #%>% 
+  #filter(!duplicated(temp_pcr_id))
 
 a <- q_pcr_table %>% 
   count(sample_id) %>% 
   filter(n>1)
+write_csv(a, here("sample_id_check.csv"))
 
 write_csv(q_pcr_table, here::here("clean_tables", "qpcr_table.csv"))
 
