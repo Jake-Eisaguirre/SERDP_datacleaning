@@ -362,3 +362,18 @@ write_csv(water_hobo, here::here("clean_tables", "water_hobo.csv"))
 
 ```
 
+# genomics data
+```{r}
+
+raw_gen <- read_csv(here("data", "SERDP_data_all_for_metaanalysis.csv")) %>% 
+  clean_names()
+
+gen <- raw_gen %>% 
+  select(c(lab_code, seq_run, new_sample_id, sample_id, season, n_seqs_187, avg_alleles_per_locus, lineage_astral_187,
+           lineage_dapc_2_99cut)) %>% 
+  mutate(season = str_to_lower(season))
+
+write_csv(gen, here("clean_tables", "genomics.csv"))
+
+```
+
