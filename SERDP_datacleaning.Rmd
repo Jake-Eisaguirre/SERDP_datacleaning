@@ -100,8 +100,10 @@ site_level_data <- as.data.frame(plyr::rbind.fill(site_level_data_2018_LA,
                                       site_level_data_2019_NM, site_level_data_2019_PA,
                                       site_level_data_2019_TN, site_level_data_2019_VT,
                                       site_level_data_2017_NM, site_level_data_2017_PA,
-                                      site_level_data_2017_TN, site_level_data_2017_VT)) %>% 
+                                      site_level_data_2017_TN, site_level_data_2017_VT,
+                                      site_level_data_2017_LA)) %>% 
   mutate(site_code = as.numeric(site_code))
+  
 
 # read in site_coordinates
 site_coords <- read_csv(here::here('data', "site_level_data", "site_coordinates.csv")) %>% 
@@ -137,7 +139,9 @@ site_table <- site_level_data %>%
                 site = str_to_lower(site),
                 site_code = str_to_lower(site_code))%>% 
   dplyr::filter(!duplicated(site_temp_id)) %>% 
-  inner_join(site_coords, by = c('site', 'dod_location'))
+  full_join(site_coords, by = c('site', 'dod_location')) %>% 
+  select(!c(site_temp_id))
+  
 
 write_csv(site_table, here::here("clean_tables", "site_table.csv"))
 
@@ -176,7 +180,7 @@ write_csv(region_tabl, here("clean_tables", "region_table.csv"))
 ```
 
 
-# now pull out unique visists based on date and survey time
+# now pull out unique visists based on date and survey time - SEE BELOW FOR TRUE VISIST TABLE
 ```{r}
 
 visit_table <- site_level_data %>% 
@@ -199,7 +203,7 @@ write_csv(visit_table, here::here("clean_tables", "visit_table.csv"))
 
 ```
 
-# now create survey table 
+# now create survey table - SEE BELOW FOR TRUE SURVEY TABLE
 ```{r}
 
 survey_table <- site_level_data %>% 
@@ -323,6 +327,84 @@ write_csv(capture_table, here::here("clean_tables", "capture_table.csv"))
 
 ```
 
+# get site info from capture table - TRUE SITE AND VISIT TABLE
+```{r}
+
+cap_site_info <- all_bio_data %>% 
+  select(date, survey_time, dod_location, site_code) %>% 
+  mutate(date = parse_date(date))
+
+site_info <- site_level_data %>% 
+  select(date, survey_time, dod_location, site_code)
+
+
+### TRUE SITE TABLE
+
+true_site_table <- cap_site_info %>% 
+  rbind(site_info) %>% 
+  select(dod_location, site_code) %>% 
+  group_by(dod_location, site_code) %>% 
+  mutate(t_id = cur_group_id(),
+         dod_location = str_to_lower(dod_location)) %>% 
+  filter(!duplicated(t_id)) %>% 
+  na.omit() %>% 
+  mutate(site = paste(dod_location, site_code, sep="")) %>% 
+  full_join(site_coords, by = c('site', 'dod_location'))
+
+write_csv(true_site_table, here("clean_tables", "site_table.csv"))
+
+
+
+
+### TRUE VISIST TABLE
+
+true_visit_table <- cap_site_info %>% 
+  rbind(site_info) %>% 
+ group_by(date, survey_time, site_code, dod_location) %>%
+  dplyr::mutate(temp_visit_id = cur_group_id(),
+                survey_time = str_to_lower(survey_time),
+                dod_location = str_to_lower(dod_location),
+                date = parse_date(date)) %>%
+  dplyr::filter(!duplicated(temp_visit_id))
+
+t <- visit_table %>% 
+  ungroup() %>% 
+  count(date, dod_location, site_code, survey_time) %>% 
+  filter(n>1)
+
+write_csv(true_visit_table, here("clean_tables", "visit_table.csv"))
+
+
+### TRUE SURVEY TABLE
+
+true_survey_table <- plyr::rbind.fill(site_level_data, cap_site_info) %>% 
+  group_by(date, dod_location, site_code, survey_time) %>% 
+  dplyr::mutate(temp_survey_id = cur_group_id(),
+                dod_location = str_to_lower(dod_location),
+                investigator_i_ds = str_to_lower(investigator_i_ds),
+                vegetation_notes = str_to_lower(vegetation_notes),
+                weather_condition_notes = str_to_lower(weather_condition_notes),
+                site_code = str_to_lower(site_code),
+                precipitation_last_48_h = str_to_lower(precipitation_last_48_h),
+                survey_time = str_to_lower(survey_time),
+                precipitation_during_visit = str_to_lower(precipitation_during_visit),
+                temperature_last_48_h = str_to_lower(temperature_last_48_h),
+                date = parse_date(date)) %>% 
+  filter(!duplicated(temp_survey_id)) %>% 
+  rename(densiometer_d1_num_covered=densiometer_d1_num_covered_uncovered) %>% 
+  rename(densiometer_d2_num_covered=densiometer_d2_num_covered_uncovered) %>% 
+  mutate(densiometer_d1_num_covered = case_when(densiometer_d1_num_covered == "covered" ~ 1,
+                                                densiometer_d1_num_covered == "uncovered" ~ 0),
+         densiometer_d2_num_covered = case_when(densiometer_d2_num_covered == "covered" ~ 1,
+                                                densiometer_d2_num_covered == "uncovered" ~ 0),
+         e_dna_sample = case_when(e_dna_sample == "Y" ~ 1,
+                                  e_dna_sample == "N" ~ 0))
+
+write_csv(true_survey_table, here("clean_tables", "survey_table.csv"))
+
+```
+
+
 # read in qPCR data
 ```{r}
 
@@ -340,11 +422,11 @@ all_qpcr <- plyr::rbind.fill(qpcr_2017, qpcr_2018, qpcr_2019)
 
 q_pcr_table <- all_qpcr %>% 
   clean_names() %>% 
-  #group_by(sample_id) %>% 
+  group_by(sample_id, collect_site) %>% 
   dplyr::mutate(extract_date = parse_date(extract_date),
                 qpcr_date = parse_date(qpcr_date),
-         temp_pcr_id = cur_group_id()) #%>% 
-  #filter(!duplicated(temp_pcr_id))
+         temp_pcr_id = cur_group_id()) %>% 
+  filter(!duplicated(temp_pcr_id))
 
 a <- q_pcr_table %>% 
   count(sample_id) %>% 
@@ -366,10 +448,13 @@ hobo_shade_date <- hobo_shade %>%
 
 shade_hobo <- hobo_shade_date %>% 
   mutate(dod_location = substr(site, 1,2),
-         site = str_sub(site, 3)) %>% 
+         site = str_sub(site, 3),
+         dod_location = str_to_lower(dod_location),
+         site = as.numeric(site),
+         date = format(as.Date(date_time), "%Y-%m-%d")) %>% 
   select(!c(x1, x))
 
-shade_hobo$site <- sub("^0+", "", shade_hobo$site)
+
 
 write_csv(shade_hobo, here::here("clean_tables", "shade_hobo.csv"))
 
@@ -386,10 +471,12 @@ hobo_soil_date <- hobo_soil %>%
 
 soil_hobo <- hobo_soil_date %>% 
   mutate(dod_location = substr(site, 1,2),
-         site = str_sub(site, 3))%>% 
+         site = str_sub(site, 3),
+         dod_location = str_to_lower(dod_location),
+         site = as.numeric(site),
+         date = format(as.Date(date_time), "%Y-%m-%d"))%>% 
   select(!c(x1, x))
 
-soil_hobo$site <- sub("^0+", "", soil_hobo$site)
 
 write_csv(soil_hobo, here::here("clean_tables", "soil_hobo.csv"))
 
@@ -406,10 +493,12 @@ hobo_sun_date <- hobo_sun %>%
 
 sun_hobo <- hobo_sun_date %>% 
   mutate(dod_location = substr(site, 1,2),
-         site = str_sub(site, 3))%>% 
+         site = str_sub(site, 3),
+         dod_location = str_to_lower(dod_location),
+         site = as.numeric(site),
+         date = format(as.Date(date_time), "%Y-%m-%d"))%>% 
   select(!c(x1, x))
 
-sun_hobo$site <- sub("^0+", "", sun_hobo$site)
 
 write_csv(sun_hobo, here::here("clean_tables", "sun_hobo.csv"))
 
@@ -426,10 +515,13 @@ hobo_water_date <- hobo_water %>%
 
 water_hobo <- hobo_water_date %>% 
   mutate(dod_location = substr(site, 1,2),
-         site = str_sub(site, 3))%>% 
-  select(!c(x1, x))
+         site = str_sub(site, 3),
+         dod_location = str_to_lower(dod_location),
+         site = as.numeric(site),
+         date = format(as.Date(date_time), "%Y-%m-%d"))%>% 
+  select(!c(x1, x)) %>% 
+  filter(!light == "Logged")
 
-water_hobo$site <- sub("^0+", "", water_hobo$site)
 
 write_csv(water_hobo, here::here("clean_tables", "water_hobo.csv"))
 
