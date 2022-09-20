@@ -409,46 +409,58 @@ write_csv(true_survey_table, here("clean_tables", "survey_table.csv"))
 ```{r}
 
 
-qpcr_2017 <- read_csv(here("data", "qPCR_results", "SERDP_qPCR_results_2017_200314.csv")) %>% 
+qpcr_2017 <- read_csv(here("data", "qPCR_results", "SERDP qPCR results 2017_220721.csv")) %>% 
   clean_names()
 
-qpcr_2018 <- read_csv(here("data", "qPCR_results", "SERDP_qPCR results_2018_191129.csv")) %>% 
+qpcr_2018 <- read_csv(here("data", "qPCR_results", "SERDP qPCR results 2018_191129.csv")) %>% 
   clean_names()
 
-qpcr_2019 <- read_csv(here("data", "qPCR_results", "SERDP_qPCR results_2019_211215.csv")) %>% 
+qpcr_2019 <- read_csv(here("data", "qPCR_results", "SERDP qPCR results 2019_220721.csv")) %>% 
   clean_names()
 
 all_qpcr <- plyr::rbind.fill(qpcr_2017, qpcr_2018, qpcr_2019)
 
 q_pcr_table <- all_qpcr %>% 
   clean_names() %>% 
-  group_by(sample_id, collect_site) %>% 
+  group_by(sample_id) %>% 
   mutate(extract_date = parse_date(extract_date),
                 qpcr_date = parse_date(qpcr_date),
          temp_pcr_id = cur_group_id()) %>% 
-  filter(!duplicated(temp_pcr_id))
+  filter(!duplicated(temp_pcr_id)) %>% 
+  select(!c(species, site, temp_pcr_id, collect_site)) %>% 
+  select(sample_id, extract_date, qpcr_date, qpcr_diluted, sample_quality, sample_ipc, sample_rerun, sample_bd,
+         sample_bd_ct, sample_bd_qty, sample_bd_swab_qty, sample_bsal, sample_bsal_qty, sample_bsal_swab_qty, notes)
 
-q_pcr_table <- all_qpcr %>% 
+extra_qpcr_table <- all_qpcr %>% 
   clean_names() %>% 
-  group_by(sample_id, collect_site) %>% 
-  dplyr::mutate(temp_pcr_id = cur_group_id()) %>% 
-  filter(!duplicated(temp_pcr_id))
+  group_by(sample_id) %>% 
+  mutate(temp_pcr_id = cur_group_id()) %>% 
+  filter(!duplicated(temp_pcr_id)) %>% 
+  select(!c(extract_date, qpcr_date, qpcr_diluted, sample_quality, sample_ipc, sample_rerun, sample_bd,
+         sample_bd_ct, sample_bd_qty, sample_bd_swab_qty, sample_bsal, sample_bsal_qty, sample_bsal_swab_qty, notes, temp_pcr_id))
 
-a <- q_pcr_table %>% 
-  count(sample_id) %>% 
-  filter(n>1)
-write_csv(a, here("sample_id_check.csv"))
 
-q_p <- q_pcr_table %>% 
-  filter(sample_id %in% a$sample_id) %>% 
-  drop_na(sample_id) %>% 
-  filter(!sample_id == "NEG EXTRACT CONTROL",
-         !sample_id == "POS EXTRACT CONTROL")
-
-write_csv(q_p, here("sample_id_check.csv"))
+# q_pcr_table <- all_qpcr %>% 
+#   clean_names() %>% 
+#   group_by(sample_id, collect_site) %>% 
+#   dplyr::mutate(temp_pcr_id = cur_group_id()) %>% 
+#   filter(!duplicated(temp_pcr_id))
+# 
+# a <- q_pcr_table %>% 
+#   count(sample_id) %>% 
+#   filter(n>1)
+# write_csv(a, here("sample_id_check.csv"))
+# 
+# q_p <- q_pcr_table %>% 
+#   filter(sample_id %in% a$sample_id) %>% 
+#   drop_na(sample_id) %>% 
+#   filter(!sample_id == "NEG EXTRACT CONTROL",
+#          !sample_id == "POS EXTRACT CONTROL")
+# 
+# write_csv(q_p, here("sample_id_check.csv"))
 
 write_csv(q_pcr_table, here::here("clean_tables", "qpcr_table.csv"))
-
+write_csv(extra_qpcr_table, here("clean_tables", "course_qpcr_table.csv"))
 ```
 
 # hobo shade
