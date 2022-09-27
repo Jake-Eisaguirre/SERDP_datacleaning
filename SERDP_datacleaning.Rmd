@@ -248,7 +248,7 @@ t <- survey_table %>%
   count(date, site_code, survey_time) %>% 
   filter(n>1)
 
-write_csv(survey_table, here::here("clean_tables", "survey_table.csv"))
+write_csv(true_survey_table, here::here("clean_tables", "survey_table.csv"))
 
 ```
 
@@ -379,7 +379,7 @@ true_visit_table <- cap_site_info %>%
   rbind(site_info) %>% 
   dplyr::select(dod_location, site_code, date, survey_time) %>% 
   mutate(site = paste(dod_location, site_code, sep = "")) %>% 
-  dplyr::group_by(dod_location, site_code, date) %>% 
+  dplyr::group_by(site, date, survey_time) %>% 
   dplyr::mutate(site_temp_id = cur_group_id(),
                 dod_location = str_to_lower(dod_location),
                 site = str_to_lower(site),
@@ -424,8 +424,11 @@ true_survey_table <- plyr::rbind.fill(site_level_data, cap_site_info) %>%
                                                 densiometer_d2_num_covered == "uncovered" ~ 0),
          e_dna_sample = case_when(e_dna_sample == "Y" ~ 1,
                                   e_dna_sample == "N" ~ 0)) %>% 
-  select(!c(site_code_notes, temp_survey_id, site_acronym, lat, long, )) %>% 
-  rename(survey_notes = notes)
+  full_join(site_coords, by = c('site_code' = 'site')) %>% 
+  select(!c(c(53:59), lat.y, long.y, notes.y, site_name.x, dod_site_location_name, site_acronym)) %>% 
+  rename(survey_notes = notes.x,
+         site = site_name.y)
+  
 
 write_csv(true_survey_table, here("clean_tables", "survey_table.csv"))
 
